@@ -80,7 +80,13 @@ arrange(desc(count_classes))|>
 
 **Q5** Take one of the questions you listed in the final question of the pre_lab and try to answer it here in code. If you don't know how to fully answer it, write what code you can and describe in words what else you would need to do. If you got an answer, is it interesting? **A5**
 
-1.  how many seats are in the engineering department and is it from one class, or many?
+1.  Which department has the most classes?
 
 ```{r}
+umd_courses |>
+  group_by(department) |>
+  summarise(
+    count_classes = n()
+  ) |>
+arrange(desc(count_classes))
 ```
