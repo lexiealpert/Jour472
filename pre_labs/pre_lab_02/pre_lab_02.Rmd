@@ -69,7 +69,6 @@ And just like that, we have just Journalism results, which we can verify looking
 
 ```{r}
 courses_2023 <- umd_courses |> filter(term > 202300)
-
 head(courses_2023)
 ```
 
