@@ -1,0 +1,112 @@
+---
+title: "Reverse Engineering Project"
+author: "Alexandra alpert, Group 1"
+date: "March 6 2024"
+output:
+  html_document:
+    theme: cerulean
+    highlight: pygments
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this notebook, we are reverse engineering the story, [STORY NAME](STORY%20URL)
+
+## Load libraries
+
+Loading required libraries for this analysis.
+
+```{r echo=FALSE, message=FALSE}
+options(scipen=999)
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+
+## Load and Cleaning Data
+
+In this section, describe the source of the data, write a basic data dictionary for data you are working with, and discuss any caveats or issues you discovered working with this data.
+
+```{r}
+murder_data <- read_csv("data/homicide-data.csv")
+
+
+```
+
+## Sentences to Engineer
+
+In this notebook, we are reverse engineering five sentences from the story.
+
+### Sentence 1
+
+-   **Sentence text**: "City police made an arrest in 41 percent of homicides in 2014"
+-   **Analysis summary**: When filtering for Baltimore in strictly 2014, the number given is 211. After this finding we used Str_detect to find which cases were closed, we did 86/211 which equals 40.7 which was the Washington Post reported.
+
+```{r}
+murder_data |>
+  filter(str_detect(reported_date, "2014")) |>
+  filter(str_detect(city, "Baltimore")) |>
+  filter(str_detect(disposition, "Closed by arrest")) 
+
+# Put code to reverse engineer sentence here
+# Display results of code below this codeblock
+
+```
+
+### Sentence 2
+
+-   **Sentence text**: [Paste in sentence to engineer here]
+-   **Analysis summary**: [Write up two to three sentences describing the results of your analysis. Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+### Sentence 3
+
+-   **Sentence text**: [Paste in sentence to engineer here]
+-   **Analysis summary**: [Write up two to three sentences describing the results of your analysis. Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+### Sentence 4
+
+-   **Sentence text**: [Paste in sentence to engineer here]
+-   **Analysis summary**: [Write up two to three sentences describing the results of your analysis. Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+### Sentence 5
+
+-   **Sentence text**: [Paste in sentence to engineer here]
+-   **Analysis summary**: [Write up two to three sentences describing the results of your analysis. Were you able to confirm the finding? If not, why not?]
+
+```{r}
+# Put code to reverse engineer sentence here
+
+# Display results of code below this codeblock
+
+```
+
+-30-
