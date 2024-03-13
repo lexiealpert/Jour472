@@ -63,8 +63,8 @@ murder_data |>
 
 ### Sentence 2
 
--   **Sentence text**: [Paste in sentence to engineer here]
--   **Analysis summary**: [Write up two to three sentences describing the results of your analysis. Were you able to confirm the finding? If not, why not?]
+-   **Sentence text**: 3. "Community leaders and residents say that leaves hundreds of families who have been robbed of a loved one without a chance at seeing justice done. Of the 1,002 homicides between 2015 and the beginning of this year, just 252 — one out of every four — resulted in an arrest."
+-   **Analysis summary**: We found the correct answer by looking at each year since 2015 to when the article was published, and then filtering which of these were closed by arrest which was 252
 
 ```{r}
 murder_data |>
