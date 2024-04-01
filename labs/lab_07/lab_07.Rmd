@@ -78,7 +78,7 @@ md_median_age |>
 5.  Join the ACS data to the Montgomery County zip code totals dataframe and rename the estimate column to a meaningful name you've given the ACS variable.
 6.  Add a column to the joined dataframe that calculates a rate of calls per 1,000 population.
 
-Which zip code has the highest rate of calls? Which has the lowest? **20707**
+Which zip code has the highest rate of calls? Which has the lowest? the lowest is **20707,** and the highest is 20877
 
 **A3**
 
@@ -103,11 +103,24 @@ moco_pop_overdose <- moco_pop_overdose |>
 
 **Q4** Using [CensusReporter.org](https://censusreporter.org/), examine the zip codes with the highest and lowest rates and compare and contrast their demographic profiles. Is there a story here?
 
-**A4 answer these two last questions**
+**Answer**: After looking at CensusReporter and comparing the zip codes, I found that there is a substantial difference in the median income . I think this could present a story idea about coorelation between income and drug abuse.
 
 **Q5** Go back to your joined dataframe from Q3 and add two more columns representing the minimum and maximum populations based on the estimate and margin of error, then calculate per capita rates for each. Do you get the same two zip codes for the highest and lowest as you did before? Does that give you more or less confidence in your answers to Q3?
+
+I got the same zip codes as i did in question #3 which, makes me more confident (assuming I did it correctly).
+
+Per Capita min: 1.76354402
+
+Per Capita max: 1.64322335
 
 **A5**
 
 ```{r}
+moco_pop_overdose <- moco_pop_overdose |>
+  mutate(min_pop = estimate - moe,
+         max_pop = estimate + moe,
+         per_capita_min = (total_calls / min_pop) * 1000,
+         per_capita_max = (total_calls / max_pop) * 1000) |>
+  arrange(desc(per_capita_max))
+
 ```
