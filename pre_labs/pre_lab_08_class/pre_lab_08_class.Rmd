@@ -161,7 +161,7 @@ Those are a little hard to read, so we can turn them 45 degrees to remove the ov
 
 ### Task 10: Run the following code
 
-**Task** Run the following code. Explain what you see after running the code in the space below. **Answer:** In this code we see the code turned 45 degreees to remove the overlap. However, the bottom of the graph is not legible.
+**Task** Run the following code. Explain what you see after running the code in the space below. **Answer:** In this code we see the code turned 45 degreees to remove the overlap. In addition, the x axis
 
 ```{r}
 baltco_911_calls_by_date |>
