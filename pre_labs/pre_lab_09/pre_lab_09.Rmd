@@ -90,7 +90,7 @@ Some publication systems allow for the embedding of HTML into a post or a story.
 
 **Answer** Copy the url of the graphic you published here. It will begin with <https://datawrapper.dwcdn.net/>. Don't copy the browser's current url.
 
-URL: <https://app.datawrapper.de/chart/RZC5s/publish>
+URL: <https://datawrapper.dwcdn.net/RZC5s/1/>
 
 ### Task 8: Make a Choropleth Map
 
@@ -150,3 +150,5 @@ That's better, but check out the tooltip by hovering over a county. It's not sup
 Ok, that looks better. Let's publish!
 
 **Task** Click the "Proceed" button until you get to the "Publish & Embed" tab, then click "Publish Now". Copy the published URL (like you did for the chart above) and paste it below. **Answer** Put the URL of your map here.
+
+<https://datawrapper.dwcdn.net/CDLsV/1/>
