@@ -364,7 +364,7 @@ So let's change the color scale to a "log" scale, which will help us see those d
 
 ### Task: Run code
 
-**Task** Run the following code. Describe the output in the space below. What regional patterns do you see? **Answer:** A pattern I see is that there is a pretty even rate of each except for in Moco County
+**Task** Run the following code. Describe the output in the space below. What regional patterns do you see? **Answer:** A pattern I see is that there is a pretty even rate of each except for in Charles county.
 
 ```{r}
 ggplot() +
