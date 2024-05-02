@@ -1,0 +1,302 @@
+---
+title: "data_analysis_basketball"
+output: html_document
+date: "2024-04-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(janitor)
+library(lubridate)
+library(tidyverse)
+library(tidycensus)
+census_api_key("ef5457f8a2b11d9eecec191d6867f76f96db192b")
+```
+```{r}
+roster_23_24 <- read_csv("data/wbb_rosters_2023_24.csv")
+roster_22_23 <- read_csv("data/wbb_rosters_2022_23.csv")
+roster_21_22 <- read_csv("data/wbb_rosters_2021_22.csv")
+roster_20_21 <- read_csv("data/wbb_rosters_2020_21.csv")
+```
+```{r}
+#Appending rosters for all four seasons 
+all_rosters <- bind_rows(roster_20_21, roster_21_22, roster_22_23, roster_23_24)
+
+```
+
+```{r}
+#Changing column types to character as needed
+
+all_rosters <- all_rosters |>
+mutate(
+  ncaa_id = as.character(ncaa_id), 
+  player_id = as.character(player_id)
+)
+```
+
+
+Data limitations
+- The four rosters are inconsistent in the number of columns they have — we think this probably won't matter, because all the columns that we specifically are working with are present in all the datasets, but that is something to consider limitation-wise
+- For some players who are graduate students, the data lists their former (undergraduate) college under the high school column. This is just a quirk of how the data is recorded, and won't really impact us — because it's such a rare case, these colleges will likely show up at the bottom of the list when we're analyzing what high schools produced the most players, and thus won't factor into our most important results. But it's something to keep an eye out for.
+-Some players here and there are missing certain pieces of information. Most instances make sense — for instance, high school is mostly not listed for international players. Other pieces of information like primary position are also missing, but those shouldn't impact our analysis because we're not looking at those columns. But there are also some players that are missing more important recorded information like heights — when analyzing height in question 5, how should we go about this? We could just drop those players from the analysis and note that we did that in a written explanation in our document. 
+-As shown in our process for solving question 2, the way that high schools are recorded is inconsistent. Some high schools in different states with the same name show up stylized the same way in the hs_clean column, and some high schools that are the same showup differently in that column (e.g. Centennial vs. Centennial HS). This requires us to be creative and do some approximation and manual checking when figuring out the answer to question 2, which we explain in code comments under that question. This also means that the result for that question may not be 100% accurate, and rather, is an approximation using the constraints we're given.
+
+
+Timeframe
+-Timeframe should be fine -- for most of the questions we're investigating, we're going to only use the 2023-24 dataset, and for one question that requires comparison across years, we have those datasets present. We'll just specify in our project that we used the timeframe of data available to us, which encompasses the 2020-2024 seasons. 
+-Some data is slightly outdated. For instance, the PAC-12 conference listed in some of the rosters does not exist anymore. But since we're not analyzing anything by conference, this should also be fine
+
+Missing definitions/context
+- Things we need definitions/data dictionary for: count, redshirt (see bullet below for specifics)
+-For the redshirt column, it would be good to get clarification on how that was documented in the data. Did the players marked as having redshirted redshirt in the season that the dataset represents, or does that just indicate that they redshirted at any point in their personal college career?
+
+What we did to make data better-defined
+- Appended rosters across all four years into a single dataset. This will make it easier to see comparisons of international players across years to help us answer question 3
+- Changed column types as needed to convert things to characters (e.g. player ID) that were registering as numbers but actually are not
+
+```{r}
+#Basic analysis to show number of rows and columns in each dataset
+roster_20_21
+
+roster_21_22
+
+roster_22_23
+
+roster_23_24
+
+```
+
+
+Basic exploratory analysis shows that...
+- 2020-21 roster has 29 columns and 13075 rows (players)
+- 2021-22 roster has 26 columns and 13645 rows (players)
+- 2022-23 roster has 29 columns and 13805 rows (players)
+- 2023-24 roster has 31 columns and 13907 rows (players)
+- When all the rosters are combined, the appended dataset shows that there have been 54,432 players across the past four seasons
+
+
+1. What states produced the most NCAA recruits for the 2023-2024 season? What about states that produced the most players per capita? 
+
+Why we're interested: We want to look at this question to see if there are trends in higher-performing states athletically in the U.S. — it would be interesting to form hypotheses about what factors might drive some states to produce more athletes than others. 
+```{r}
+roster_23_24 |>
+#For players who come from places outside the U.S., state_clean is listed as NA (because they don't have a state). This line of code will drop all those instances since we are only looking at American players for this question 
+  drop_na(state_clean) |>
+  group_by(state_clean)|>
+  summarise (
+    state_count = n()
+  ) |>
+  arrange(desc(state_count)) 
+#We can see here that Texas produced the most players, followed by Pennsylvania and New York. Guam, the Virgin Islands and Puerto Rico produced the fewest players, which is also expected given that those are small territories.  
+```
+
+```{r}
+#But looking at numbers alone may not give us a great sense of things. For instance, Texas is one of the more populated states, so it makes sense that it would produce more players. Instead, we're going to try and look at the per capita rate, by attaching a dataset with the population of each state. We call this dataset by using the Census API. This will give us a better sense of the states that produced the most players relative to their size and population.
+
+
+state_population <- get_acs(geography = "state", 
+        variables = c(pop18plus = "B09021_001"), 
+        year= 2019) 
+
+#Now we're going to group by state
+state_grouped_23_24_roster <- roster_23_24 |>
+  group_by(state_clean) |>
+  summarise (
+    state_count = n()
+    ) 
+
+#We don't have the same number of rows to join on here, so instead of using a join function, we're going to add a column to the roster table that will apply the appropriate population number depending on what state is in each row, based on the numbers we have in the census data. 
+state_grouped_23_24_roster <- state_grouped_23_24_roster |>
+  mutate (state_population = 
+            case_when (state_clean == "AL"  ~ "3664292",
+              state_clean == "AK" ~ "526228", 
+              state_clean == "AZ" ~ "5260156", 
+              state_clean == "AR" ~ "2213525", 
+              state_clean == "CA" ~ "29461376", 
+              state_clean == "CO" ~ "4232619", 
+              state_clean == "CT" ~ "2719834", 
+              state_clean == "DE" ~ "729261",
+              state_clean == "FL" ~ "16299441",
+              state_clean == "GA" ~ "7642687",
+              state_clean == "HI" ~ "1075150",
+              state_clean == "ID" ~ "1247701",
+              state_clean == "IL" ~ "9587003",
+              state_clean == "IN" ~ "4909304",
+              state_clean == "IA" ~ "2315180",
+              state_clean == "KS" ~ "2121274",
+              state_clean == "KY" ~ "3311138",
+              state_clean == "LA" ~ "3433934",
+              state_clean == "ME" ~ "1047786",
+              state_clean == "MD" ~ "4539162",
+              state_clean == "MA" ~ "5236114",
+              state_clean == "MI" ~ "7564959",
+              state_clean == "MN" ~ "4140001",
+              state_clean == "MS" ~ "2178480",
+              state_clean == "MT" ~ "794994",
+              state_clean == "MO" ~ "4553930",
+              state_clean == "NE" ~ "1390810",
+              state_clean == "NV" ~ "2254884",
+              state_clean == "NH" ~ "1046879",
+              state_clean == "NJ" ~ "6738737",
+              state_clean == "NM" ~ "1562483",
+              state_clean == "NY" ~ "14914734",
+              state_clean == "NC" ~ "7696427",
+              state_clean == "ND" ~ "556289",
+              state_clean == "OH" ~ "8740197",
+              state_clean == "OK" ~ "2868522",
+              state_clean == "OR" ~ "3176204",
+              state_clean == "PA" ~ "9716564",
+              state_clean == "RI" ~ "809114",
+              state_clean == "SC" ~ "3785555",
+              state_clean == "SD" ~ "623888",
+              state_clean == "TN" ~ "5049828",
+              state_clean == "TX" ~ "20337909",
+              state_clean == "UT" ~ "2129171",
+              state_clean == "VT" ~ "482734",
+              state_clean == "VA" ~ "6348948",
+              state_clean == "WA" ~ "5616974",
+              state_clean == "WV" ~ "1401858",
+              state_clean == "WI" ~ "4365949",
+              state_clean == "WY" ~ "431015"
+            ))
+
+#Now we're going to drop the non-U.S.-state values
+state_grouped_23_24_roster <- state_grouped_23_24_roster |>
+  drop_na(state_population)
+
+#Now, we add a column for the per capita rate and arrange the table by highest to lowest per capita rate.
+state_grouped_23_24_roster <- state_grouped_23_24_roster |>
+ mutate(per_capita_players = as.numeric(state_count)/as.numeric(state_population)) |>
+ mutate(per_capita_players = per_capita_players *100000) |>
+  arrange(desc(per_capita_players))
+
+```
+
+Answer: The top five states to produce players numbers-wise are Texas, Pennsylvania, New York, California, Ohio and Illinois. When we look at the rates of players per 100,000 residents, the top states are Minnesota, Vermont, South Dakota, Wisconsin and Pennsylvania. It's interesting that there's not much overlap in these two measures — although states like Texas and New York may produce a lot of players, they don't produce an above-average amount given their populations. But seeing that smaller states like Vermont and South Dakota produce a lot of players indicates that despite a lack of population, these states are exceptional in sending women to NCAA basketball teams.
+
+
+2. What high schools produced the most NCAA recruits for the 2023-24 season? Are they mostly public or private?
+
+Why we're interested: We're looking at this question to see if there are any exceptional high schools in the United States. We're also curious about if the top athlete-producing schools tend to lean public or private — that might raise some indications about how socioeconomic status and available educational resources may influence the likelihood of a player going to the NCAA. 
+
+```{r}
+roster_23_24 |>
+#For players who come from places outside the U.S., hs_clean often isn't listed. We're going to drop these instances since we're only interested in the high schools that are included in the data 
+  drop_na(hs_clean)|>
+  group_by(hs_clean)|>
+  summarise(
+    high_schools = n()
+  ) |>
+  arrange(desc(high_schools)) |>
+#For the scope of our project, let's just look at the top 10 high schools. This line of code actually gives us 12 high schools, but that's because there are some that produced the same amount of players as others.
+  top_n(10) 
+```
+
+```{r}
+#We run into an issue here where some high schools from different states are stylized the same way in the hs_clean column, conflating different high schools in the same count. So we're going to create a new column distinguishing these by high school name AND state instead, and then group by that to get a more accurate result. 
+
+roster_23_24 |>
+  drop_na(hs_clean)|>
+  mutate(hs_and_state = paste(hs_clean, "-", hometown_clean)) |>
+  group_by(hs_and_state)|>
+  summarise (
+    hs_count = n()
+  ) |>
+  arrange(desc(hs_count)) |>
+  top_n(10)
+
+#After examining these results, we see another, different issue. While this gets rid of the multiple Centennial high schools in different states being lumped together, for instance, it poses a different problem. It omits certain schools that seem to be boarding schools, because all the players from those schools have different hometowns listed. But schools like New Hope and IMG Academy are some of the top contenders. To reconcile these issues, we opted to hand-compare the top 10 results from each of the blocks of code, to compile our own list of the actual top 10 schools. The list is below this codeblock. One limitation: these may not be entirely accurate. Based on this data alone (since people may have a different hometown than where they went to high school), it's hard to tell what high schools should be taken out, because it's unclear if there are multiple high schools with the same name. But this is an approximation based on our best guesses. 
+```
+Answer: The top 10 high schools that produced players are: New Hope Academy, IMG Academy, Notre Dame Academy, Sacred Heart Academy, Trinity, Example Academy, DeSoto High School, Dunmore, South Mecklenburg, and Centennial (in Las Vegas).
+
+After looking at the result from this code and conducting outside research, we can see that 6  are private schools and 4  are public schools. The top 3 high schools that produce players are all private schools, showing a trend that private schools tend to produce more NCAA players than public schools. 
+
+3. Are there changes between school years in terms of how many student athletes outside of the U.S. are on the NCAA roster? 
+
+Why we're interested: It's pretty commonly known that international student-athletes in the NCAA face a lot more restrictions, like having to get a visa, being limited in the income they can make off name/image/likeness deals and so on. Despite or because of these factors, it's interesting to look into how international student involvement in women's basketball has been impacted over the years. Have more people become involved or been dissuaded from being involved, and how have those students contributed to women's basketball rosters? 
+```{r}
+
+international_students <- all_rosters |>
+#The 2021-22 season is documented in two different ways in the data, so first we're renaming those values to fix that so the group by will be easier 
+  mutate(season = case_when (season == "2021-2022" ~ "2021-22", 
+    TRUE ~ season
+  )) |>
+#Then, since we want to only look at international students, we're filtering out all students from the USA and grouping by season to see the change in internationl numbers across seasons 
+  filter(country_clean != "USA") |>
+  group_by(season) |>
+  summarise(
+    international_count = n()
+  ) 
+
+  
+#We know from our exploratory analysis that the 2020-21 season had 13075 players drafted, the 2021-22 roster had 13645 players drafted, the 2022-23 roster had 13803 players drafted, and the 2023-24 roster had 13907 players drafted. To show the number of international students as a percentage of the total players per season, we're going to mutate using these numbers 
+international_students <- international_students |>
+  mutate(total_season_players = case_when(
+    season == "2020-21" ~ "13075",
+    season == "2021-22" ~ "13645", 
+    season == "2022-23" ~ "13803", 
+    season == "2023-24" ~ "13907" 
+    )) |>
+  mutate(international_pct = as.numeric((international_count)/as.numeric(total_season_players))*100)
+
+#To see what this trend looks like, we can make a visual 
+international_students |>
+  ggplot(aes(x=season, y=international_pct)) +
+  geom_point() 
+ 
+```
+
+Answer: The share of international students that make up each season's NCAA women's basketball roster has grown fairly linearly from the 2020-21 season to the 2023-24 season, indicating an increase in the percentage of international students on each season's roster. 
+
+
+4. What percentage of students on the 2023-24 roster are redshirts, and are players in a certain year more likely to redshirt?
+
+Why we're interested: Since college athletes have five years to complete four seasons of their sport, they can redshirt in any year. We're interested in looking at what years are the most common 
+```{r}
+
+redshirt_23_24 <- roster_23_24 |>
+  filter (redshirt == 1) |>
+  group_by (year_clean) |>
+  summarise (
+    redshirt_count_by_year = n()
+  ) |>
+  arrange(desc(redshirt_count_by_year)) |>
+  mutate(total_redshirts = sum(redshirt_count_by_year)) |>
+#It might provide extra insight to see redshirts in a given year as a percentage of the total number of redshirts 
+  mutate((redshirt_percentage = redshirt_count_by_year/total_redshirts)*100)
+
+redshirt_23_24
+
+#As stated in the limitations discussed above, we're unsure if the redshirt column indicates that a player redshirted in the 2023-24 season, or if it just means they redshirted at any point in their college career. We completed this question assuming that the data represents a redshirt IN the 2023-24 season (in other words, in the corresponding academic year listed in this same dataframe), but if the data was documented differently, the result for this could be wrong.
+
+```
+Answer: In the 2023-24 year, players were most likely to redshirt during their sophomore year. Junior year followed, and then freshman year. Senior year and a player's fifth year were the least common. In terms of the most and least popular options, more than 31% more players redshirted during their sophomore year than their fifth year.
+
+
+5. Are there differences in average height between the different divisions across all seasons? Also, is there a correlation between higher/lower average heights at different schools and how well those teams did? For the second question, we'll focus on just the 2023-24 season as the most recent example 
+
+Why we're interested: Height is often discussed as a major factor in someone's success as a basketball player, so it'll be interesting to look at whether taller or shorter average heights hav driven players to more success (playing D1) or less success (playing D3), as well as if average height influenced how well individual teams did.
+
+```{r}
+#Use this codeblock to group by division, and then calculate average height for each division 
+division_1_height <- all_rosters |>
+  filter(division == "I") |>
+  drop_na(total_inches) |>
+  mean(total_inches)
+
+division_1_height
+
+
+```
+
+```{r}
+#Use this codeblock to group by school, and then calculate average height at each school
+#Then we'll look up rankings from the 2023-24 season and compare the tallest/shortest teams with these rankings to see if there are any relationships we can figure out 
+
+```
+
+
